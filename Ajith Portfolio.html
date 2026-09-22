@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stylish Fresher Portfolio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #23272f 0%, #3a475c 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+    .navbar {
+      background: linear-gradient(90deg, #23272f 0%, #3a475c 100%);
+      box-shadow: 0 4px 24px rgba(34,39,47,0.12);
+      animation: fadeInDown 1s;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .navbar-brand {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #e0e0e0 !important;
+      text-shadow: 1px 2px 8px #23272f;
+    }
+    .nav-link {
+      color: #e0e0e0 !important;
+      font-weight: 500;
+      font-size: 1.1rem;
+      margin-right: 18px;
+      transition: color 0.3s, transform 0.3s;
+      position: relative;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: #1e90ff !important;
+      transform: scale(1.1);
+      text-shadow: 0 2px 8px #23272f;
+    }
+    .profile-img {
+      width: 160px;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 6px solid #1e90ff;
+      box-shadow: 0 8px 32px rgba(30,144,255,0.18);
+      margin-bottom: 20px;
+      animation: bounceIn 1.2s;
+    }
+    .profile-img:hover {
+      transform:scale3d(1.2, 1.2, 1.2);
+      transition: 0.8s ease-in-out;
+      box-shadow: 0 12px 48px rgba(30,144,255,0.22);
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0.7);}
+      60% { transform: scale(1.15);}
+      80% { transform: scale(0.95);}
+      100% { transform: scale(1);}
+    }
+    .section-title {
+      font-weight: 700;
+      color: #1e90ff;
+      margin-bottom: 20px;
+      font-size: 2rem;
+      letter-spacing: 1px;
+      animation: fadeInUp 1s;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .skills-list span {
+      display: inline-block;
+      background: linear-gradient(90deg, #23272f 0%, #1e90ff 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 8px 20px;
+      margin: 6px 10px 6px 0;
+      font-size: 1rem;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(30,144,255,0.12);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      animation: fadeInUp 1s;
+    }
+    .skills-list span:hover {
+      transform: scale(1.12) rotate(-3deg);
+      box-shadow: 0 6px 24px rgba(30,144,255,0.22);
+      background: linear-gradient(90deg, #1e90ff 0%, #23272f 100%);
+    }
+    .project-card {
+      background: #23272f;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(30,144,255,0.12);
+      padding: 28px 22px;
+      margin-bottom: 32px;
+      transition: box-shadow 0.3s, transform 0.3s;
+      position: relative;
+      overflow: hidden;
+      animation: fadeInUp 1s;
+      color: #e0e0e0;
+      border: 1px solid #3a475c;
+    }
+    .project-card:hover {
+      box-shadow: 0 12px 48px rgba(30,144,255,0.22);
+      transform: translateY(-8px) scale(1.03);
+      border: 2px solid #1e90ff;
+    }
+    .project-card h5 {
+      color: #1e90ff;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+    .project-card a {
+      color: #1e90ff;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .project-card a:hover {
+      color: #e0e0e0;
+      text-decoration: underline;
+    }
+    .contact-info a {
+      color: #1e90ff;
+      text-decoration: none;
+      margin-right: 18px;
+      font-size: 1.1rem;
+      transition: color 0.2s;
+    }
+    .contact-info a:hover {
+      color: #e0e0e0;
+      text-decoration: underline;
+      transform: scale(1.1);
+    }
+    .contact-section {
+      background: rgba(35, 39, 47, 0.78);
+      border: 1px solid #3a475c;
+      border-radius: 22px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
+      overflow: hidden;
+    }
+    .contact-intro {
+      background: linear-gradient(145deg, #1e90ff 0%, #1667b8 100%);
+      color: #fff;
+      padding: 40px;
+      height: 100%;
+    }
+    .contact-intro h3 {
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .contact-intro p {
+      color: rgba(255, 255, 255, 0.86);
+      line-height: 1.7;
+    }
+    .contact-detail {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 24px;
+      color: #fff;
+      text-decoration: none;
+      transition: transform 0.2s, color 0.2s;
+    }
+    .contact-detail:hover {
+      color: #fff;
+      transform: translateX(5px);
+    }
+    .contact-detail i {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 50%;
+      font-size: 1.1rem;
+    }
+    .contact-detail small {
+      display: block;
+      color: rgba(255, 255, 255, 0.72);
+    }
+    .contact-form {
+      padding: 40px;
+    }
+    .contact-form label {
+      color: #e0e0e0;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .contact-form .form-control {
+      padding: 12px 14px;
+    }
+    @media (max-width: 767.98px) {
+      .contact-intro, .contact-form { padding: 28px; }
+    }
+    .form-control:focus {
+      border-color: #1e90ff;
+      box-shadow: 0 0 0 0.2rem rgba(30,144,255,0.15);
+      background: #23272f;
+      color: #e0e0e0;
+    }
+    .form-control {
+      background: #23272f;
+      color: #e0e0e0;
+      border: 1px solid #3a475c;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #23272f 0%, #1e90ff 100%);
+      border: none;
+      font-weight: 600;
+      letter-spacing: 1px;
+      transition: background 0.2s, transform 0.2s;
+      box-shadow: 0 2px 8px rgba(30,144,255,0.12);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(90deg, #1e90ff 0%, #23272f 100%);
+      transform: scale(1.08);
+      box-shadow: 0 6px 24px rgba(30,144,255,0.22);
+      color: #fff;
+    }
+    footer {
+      background: linear-gradient(90deg, #23272f 0%, #1e90ff 100%);
+      color: #e0e0e0;
+      font-weight: 500;
+      letter-spacing: 1px;
+      box-shadow: 0 -2px 12px rgba(30,144,255,0.08);
+      animation: fadeInUp 1s;
+    }
+    /* Animations for sections */
+    .animated-section {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s, transform 0.8s;
+    }
+    .animated-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#" style="color: #1e90ff ;">Fresher Portfolio</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="#about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#skills">Skills</a></li>
+          <li class="nav-item"><a class="nav-link" href="#projects">Projects</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav> 
+
+  <!-- About Section -->
+  <section id="about" class="container py-4 animated-section text-center">
+    <img src="C:\Users\acer\Downloads\Projects\My Portfolio\Ajith.jpeg" alt="Profile" class="profile-img">
+    <h1 class="mb-2">M Ajith</h1>
+    <h5 class="text-muted mb-3" style="color:#e0e0e0 !important;">Full Stack Web Developer</h5>
+    <p class="lead mb-4">
+      Hi! I'm a passionate fresher with a strong foundation in web development and programming. I love building creative solutions and am eager to contribute to innovative projects.
+    </p>
+    <div class="contact-info mb-2">
+      <a href="ajith735897@gmail.com"><i class="bi bi-envelope"></i> <span class="__cf_email__" data-cfemail="443d2b31366a2129252d2804213c25293428216a272b29">[email&#160;protected]</span></a>
+      <a href="tel:+7358978015"><i class="bi bi-telephone"></i> +7358978015</a>
+      <a href="https://www.linkedin.com/in/ajith-%F0%9D%95%84-4321683a4/" target="_blank"><i class="bi bi-linkedin"></i> LinkedIn</a>
+      <a href="https://github.com/ajithelumalai59-netizen" target="_blank"><i class="bi bi-github"></i> GitHub</a>
+    </div>
+  </section>
+
+  <!-- Skills Section -->
+  <section id="skills" class="container py-4 animated-section">
+    <h2 class="section-title">Skills</h2>
+    <div class="skills-list mb-4">
+      <span>HTML5</span>
+      <span>CSS3</span>
+      <span>JavaScript</span>
+      <span>Bootstrap</span>
+      <span>React</span>
+      <span>Database</span>
+      <span>Git & GitHub</span>
+      <span>SQL</span>
+    </div>
+  </section>
+
+  <!-- Projects Section -->
+  <section id="projects" class="container py-4 animated-section">
+    <h2 class="section-title">Projects</h2>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="project-card">
+          <h5><i class="bi bi-window"></i> Personal Portfolio Website</h5>
+          <p>A responsive portfolio website built with HTML, CSS, and Bootstrap to showcase my skills and projects.</p>
+          <a href="C:\Users\acer\Downloads\Projects\My Portfolio\Ajith Portfolio.html" target="_blank"><i class="bi bi-box-arrow-up-right"></i> View Project</a>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="project-card">
+          <h5><i class="bi bi-cloud-sun"></i> Online shop application</h5>
+          <p>Developed an online shop application using JavaScript and a REST API to display real-time product data.</p>
+          <a href="https://ajith58.neocities.org/LAM%20Electronics/LAM%20Electronics" target="_blank"><i class="bi bi-box-arrow-up-right"></i> View Project</a>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="project-card">
+          <h5><i class="bi bi-check2-square"></i> Student AI Learner</h5>
+          <p>A simple AI learning application built with React for adding, editing, and storing daily tasks.</p>
+          <a href="https://student-ai-learn.vercel.app/" target="_blank"><i class="bi bi-box-arrow-up-right"></i> View Project</a>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="project-card">
+          <h5><i class="bi bi-database"></i> 3D webinar Platform</h5>
+          <p>Created a 3D webinar platform with CRUD operations and SQLite integration.</p>
+          <a href="https://3d-web-rose.vercel.app/" target="_blank"><i class="bi bi-box-arrow-up-right"></i> View Project</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="container py-4 mb-5 animated-section">
+    <h2 class="section-title">Contact Me</h2>
+    <div class="contact-section">
+      <div class="row g-0">
+        <div class="col-md-5">
+          <div class="contact-intro">
+            <h3>Let’s build something great.</h3>
+            <p>Have a project, opportunity, or idea in mind? I’d love to hear about it and explore how I can help.</p>
+            <a class="contact-detail" href="mailto:ajith735897@gmail.com">
+              <i class="bi bi-envelope"></i>
+              <span><small>Email me</small>ajith735897@gmail.com</span>
+            </a>
+            <a class="contact-detail" href="tel:+917358978015">
+              <i class="bi bi-telephone"></i>
+              <span><small>Call me</small>+91 73589 78015</span>
+            </a>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <form class="contact-form" id="contact-form" novalidate>
+            <div class="row">
+              <div class="col-sm-6 mb-3">
+                <label for="contact-name">Full name</label>
+                <input id="contact-name" name="name" type="text" class="form-control" placeholder="Enter your full name" autocomplete="name" required>
+              </div>
+              <div class="col-sm-6 mb-3">
+                <label for="contact-email">Email address</label>
+                <input id="contact-email" name="email" type="email" class="form-control" placeholder="you@example.com" autocomplete="email" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-6 mb-3">
+                <label for="contact-phone">Phone number <span class="text-muted fw-normal">(optional)</span></label>
+                <input id="contact-phone" name="phone" type="tel" class="form-control" placeholder="+91 98765 43210" autocomplete="tel">
+              </div>
+              <div class="col-sm-6 mb-3">
+                <label for="contact-subject">Subject</label>
+                <input id="contact-subject" name="subject" type="text" class="form-control" placeholder="Project enquiry" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary px-4 py-2"><i class="bi bi-send me-2"></i><span class="button-text">Submit details</span></button>
+            <p id="form-status" class="mt-3 mb-0" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="text-center py-3">
+    &copy; 2025 Your Name. All rights reserved.
+  </footer>
+
+  <!-- Bootstrap JS Bundle -->
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Animation on scroll -->
+  <script>
+    function revealSections() {
+      document.querySelectorAll('.animated-section').forEach(section => {
+        const rect = section.getBoundingClientRect();
+        if (rect.top < window.innerHeight - 80) {
+          section.classList.add('visible');
+        }
+      });
+    }
+    window.addEventListener('scroll', revealSections);
+    window.addEventListener('load', revealSections);
+
+    const contactForm = document.getElementById('contact-form');
+    const formStatus = document.getElementById('form-status');
+    const contactApi = 'https://script.google.com/macros/s/AKfycbyLshNDsMyUtf1NJxYYj2_S-bYsT4ia3zXZLWJ6AQ6TJ0scUx0KYpA3dzaPCpOp0ZmaaA/exec';
+
+    contactForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submitButton = contactForm.querySelector('button[type="submit"]');
+      const buttonText = submitButton.querySelector('.button-text');
+
+      if (!contactForm.checkValidity()) {
+        contactForm.classList.add('was-validated');
+        formStatus.textContent = 'Please complete all fields with a valid email address.';
+        formStatus.className = 'mt-3 mb-0 text-warning';
+        return;
+      }
+
+      submitButton.disabled = true;
+      buttonText.textContent = 'Sending...';
+      formStatus.textContent = '';
+
+      try {
+        const response = await fetch(contactApi, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('contact-name').value,
+            email: document.getElementById('contact-email').value,
+            phone: document.getElementById('contact-phone').value,
+            subject: document.getElementById('contact-subject').value
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Unable to send your message.');
+
+        contactForm.reset();
+        contactForm.classList.remove('was-validated');
+        formStatus.textContent = result.message;
+        formStatus.className = 'mt-3 mb-0 text-success';
+      } catch (error) {
+        formStatus.textContent = error instanceof TypeError
+          ? 'Unable to submit details. Please check the Google Apps Script deployment settings.'
+          : (error.message || 'Something went wrong. Please try again.');
+        formStatus.className = 'mt-3 mb-0 text-danger';
+      } finally {
+        submitButton.disabled = false;
+        buttonText.textContent = 'Submit details';
+      }
+    });
+  </script>
+</body>
+</html>
