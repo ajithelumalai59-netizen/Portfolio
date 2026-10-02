@@ -328,10 +328,14 @@
     /* Motion inspired by the reference portfolio: soft ambient light, a moving name accent, and staggered reveals. */
     @keyframes ambientDrift { 0%,100% { transform:translate3d(0,0,0) scale(1); opacity:.65; } 50% { transform:translate3d(-18px,18px,0) scale(1.08); opacity:1; } }
     @keyframes nameShimmer { to { background-position:200% center; } }
-    @keyframes floatGently { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-9px); } }
+    @keyframes photoReveal {
+      0% { opacity:0; transform:perspective(700px) translateY(30px) rotateY(-18deg) scale(.72); filter:blur(8px); }
+      65% { opacity:1; transform:perspective(700px) translateY(-4px) rotateY(4deg) scale(1.04); filter:blur(0); }
+      100% { opacity:1; transform:perspective(700px) translateY(0) rotateY(0) scale(1); filter:blur(0); }
+    }
     @keyframes heroRise { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:translateY(0); } }
     #about::before { animation:ambientDrift 9s ease-in-out infinite; }
-    #about .profile-img { animation:bounceIn 1.2s, floatGently 5s ease-in-out 1.3s infinite; }
+    #about .profile-img { opacity:0; animation:photoReveal 2s cubic-bezier(.2,.75,.25,1) .12s both; will-change:transform,opacity,filter; }
     #about h1 { background:linear-gradient(100deg,#f3f7fc 15%,#8bd0ff 45%,#f3f7fc 75%); background-size:200% auto; color:transparent; background-clip:text; -webkit-background-clip:text; animation:heroRise .75s .12s both,nameShimmer 8s linear 1s infinite; }
     #about h5,#about .lead,#about .contact-info { animation:heroRise .7s both; }
     #about h5 { animation-delay:.2s; }
@@ -350,11 +354,111 @@
     .contact-section:hover { border-color:rgba(103,183,255,.28); box-shadow:0 28px 80px rgba(0,0,0,.26),0 0 45px rgba(64,145,213,.06); }
     @media(prefers-reduced-motion:reduce) {
       #about::before,#about .profile-img,#about h1,#about h5,#about .lead,#about .contact-info { animation:none!important; }
+      #about .profile-img { opacity:1; filter:none; transform:none; will-change:auto; }
       .animated-section:not(#about) .section-title,#projects .project-card { opacity:1!important; transform:none!important; transition:none!important; }
     }
 
     
 
+  </style>
+  <style>
+    #skills { scroll-margin-top:88px; width:100%; max-width:none!important; padding-left:0!important; padding-right:0!important; }
+    #skills > .section-title { padding-left:max(20px,calc((100vw - 680px)/2)); }
+    #skills .section-title { width:min(100%,680px); margin:0 auto 10px; }
+    .skills-grid { position:relative; display:block; width:min(100%,620px); height:560px; margin:0 auto 30px; isolation:isolate; --orbit-radius:145px; }
+    .skills-grid { left:50%; width:min(100vw,620px); margin-left:calc(-1 * min(50vw,310px)); }
+    #skills > .section-title { position:relative; left:50%; width:min(100vw,620px); margin-left:calc(-1 * min(50vw,310px)); padding-left:20px; }
+    .skills-grid::before { content:''; position:absolute; z-index:-1; width:calc(var(--orbit-radius) * 2); height:calc(var(--orbit-radius) * 2); left:50%; top:50%; border:1px solid rgba(141,92,246,.3); border-radius:50%; transform:translate(-50%,-50%); background:radial-gradient(circle,rgba(141,92,246,.075),transparent 68%); box-shadow:0 0 55px rgba(115,74,211,.12),inset 0 0 40px rgba(115,74,211,.06); pointer-events:none; }
+    .skills-grid::after { content:''; position:absolute; z-index:-1; width:14px; height:14px; left:50%; top:50%; border-radius:50%; background:radial-gradient(circle at 35% 35%,#e4c9ff,#9862ff 55%,#5936b4); box-shadow:0 0 18px 7px rgba(141,92,246,.32),0 0 70px 22px rgba(103,183,255,.12); transform:translate(-50%,-50%); pointer-events:none; }
+    .skills-grid { background:radial-gradient(circle at 50% 50%,rgba(141,92,246,.045),transparent 44%); }
+    .skills-grid .skill-card { position:absolute; left:50%; top:50%; width:142px; height:112px; min-height:0; margin:0; opacity:1; transform:translate(-50%,-50%); }
+    .skills-grid .skill-card:nth-of-type(1) { --orbit-angle:-90deg; }
+    .skills-grid .skill-card:nth-of-type(2) { --orbit-angle:-38.57deg; }
+    .skills-grid .skill-card:nth-of-type(3) { --orbit-angle:12.86deg; }
+    .skills-grid .skill-card:nth-of-type(4) { --orbit-angle:64.29deg; }
+    .skills-grid .skill-card:nth-of-type(5) { --orbit-angle:115.71deg; }
+    .skills-grid .skill-card:nth-of-type(6) { --orbit-angle:167.14deg; }
+    .skills-grid .skill-card:nth-of-type(7) { --orbit-angle:218.57deg; }
+    .skills-grid .skill-card { transform:translate(-50%,-50%) rotate(var(--orbit-angle)) translateY(calc(-1 * var(--orbit-radius))) rotate(calc(-1 * var(--orbit-angle))); }
+    @keyframes orbitRing { to { transform:translate(-50%,-50%) rotate(calc(var(--orbit-angle) + 360deg)) translateY(calc(-1 * var(--orbit-radius))) rotate(calc(-1 * (var(--orbit-angle) + 360deg))); } }
+    #skills.visible .skills-grid .skill-card { animation:orbitRing 32s linear infinite!important; }
+    #skills.visible .skills-grid .skill-card:nth-of-type(2) { animation-delay:-4.57s!important; }
+    #skills.visible .skills-grid .skill-card:nth-of-type(3) { animation-delay:-9.14s!important; }
+    #skills.visible .skills-grid .skill-card:nth-of-type(4) { animation-delay:-13.71s!important; }
+    #skills.visible .skills-grid .skill-card:nth-of-type(5) { animation-delay:-18.28s!important; }
+    #skills.visible .skills-grid .skill-card:nth-of-type(6) { animation-delay:-22.85s!important; }
+    #skills.visible .skills-grid .skill-card:nth-of-type(7) { animation-delay:-27.42s!important; }
+    #skills.visible .skills-grid .skill-card:hover { animation-play-state:paused!important; }
+    @media(max-width:767.98px) { .skills-grid { height:500px; --orbit-radius:132px; } .skills-grid .skill-card { width:128px; height:104px; padding:12px 8px; } .skills-grid .skill-card > i { font-size:1.8rem; margin-bottom:8px; } }
+    @media(max-width:575.98px) { .skills-grid { height:430px; --orbit-radius:112px; } .skills-grid .skill-card { width:112px; height:96px; padding:9px 6px; border-radius:16px; } .skills-grid .skill-card h3 { font-size:.84rem; } .skills-grid .skill-card p { font-size:.69rem; } .skills-grid .skill-card > i { font-size:1.5rem; margin-bottom:6px; } }
+    @media(max-width:380px) { .skills-grid { height:390px; --orbit-radius:100px; } .skills-grid .skill-card { width:100px; height:90px; padding:7px 4px; } .skills-grid .skill-card h3 { font-size:.76rem; } .skills-grid .skill-card p { font-size:.62rem; } }
+    @media(prefers-reduced-motion:reduce) { .skills-grid::before { display:none; } #skills.visible .skills-grid .skill-card { animation:none!important; transform:translate(-50%,-50%) rotate(var(--orbit-angle)) translateY(calc(-1 * var(--orbit-radius))) rotate(calc(-1 * var(--orbit-angle)))!important; } }
+    @keyframes orbitSpark { to { transform:translate(-50%,-50%) rotate(360deg); } }
+    .skills-grid .orbit-spark { position:absolute; z-index:0; left:50%; top:50%; width:calc(var(--orbit-radius) * 2); height:calc(var(--orbit-radius) * 2); border-radius:50%; pointer-events:none; animation:orbitSpark 18s linear infinite; }
+    .skills-grid .orbit-spark::before { content:''; position:absolute; left:50%; top:-3px; width:7px; height:7px; border-radius:50%; background:#b8ddff; box-shadow:0 0 12px 4px rgba(103,183,255,.48); }
+    @media(prefers-reduced-motion:reduce) { .skills-grid .orbit-spark { display:none; } }
+  </style>
+  <style>
+    /* Static solar-system skill map based on the supplied sketch. */
+    .motion-showcase { display:none!important; }
+    .skills-grid { position:relative; left:auto; display:block; isolation:isolate; width:85vw; height:75vh; min-height:560px; max-height:900px; margin:8px auto 30px; overflow:hidden; --orbit-radius:min(34vw,340px); background:radial-gradient(ellipse at center,rgba(109,85,203,.1),transparent 62%); }
+    #skills > .section-title { left:auto; width:min(90vw,1000px); margin-left:auto; margin-right:auto; }
+    .skills-grid::before,.skills-grid::after { content:''; display:block!important; position:absolute; left:50%; top:50%; border-radius:50%; pointer-events:none; }
+    .skills-grid::before { z-index:-2; width:96%; height:94%; border:1px solid rgba(180,199,238,.1); background:radial-gradient(ellipse at center,rgba(255,255,255,.025),transparent 68%); transform:translate(-50%,-50%); }
+    .skills-grid::after { z-index:3; width:clamp(58px,8vw,92px); height:clamp(58px,8vw,92px); border:1px solid rgba(231,239,255,.7); background:radial-gradient(circle at 38% 32%,#fff,#b9d8ff 22%,#8d5cf6 52%,#241b45 78%); box-shadow:0 0 22px 8px rgba(141,92,246,.48),0 0 90px 30px rgba(103,183,255,.23); transform:translate(-50%,-50%); }
+    .skills-grid .orbit-ring { position:absolute; z-index:-1; left:50%; top:50%; width:var(--ring-width); height:var(--ring-height); border:1px solid rgba(225,235,255,.48); border-radius:50%; box-shadow:0 0 10px rgba(161,193,255,.15),inset 0 0 10px rgba(161,193,255,.08); transform:translate(-50%,-50%) rotate(var(--ring-tilt)); pointer-events:none; }
+    .skills-grid .skill-card { position:absolute; left:50%; top:50%; z-index:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:148px; height:112px; min-height:0; max-width:none; margin:0; padding:12px; opacity:1; border:1px solid rgba(162,193,231,.28); border-radius:19px; background:linear-gradient(145deg,rgba(29,43,64,.98),rgba(13,22,37,.98)); box-shadow:0 14px 34px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08); backdrop-filter:blur(12px); transform:translate(-50%,-50%) rotate(var(--orbit-angle)) translateY(calc(-1 * var(--orbit-radius))) rotate(calc(-1 * var(--orbit-angle))); transition:border-color .25s,box-shadow .25s; }
+    .skills-grid .skill-card:nth-of-type(1) { --orbit-angle:-90deg; --orbit-radius:126px; --ring-width:34vw; --ring-height:27vh; --ring-tilt:0deg; }
+    .skills-grid .skill-card:nth-of-type(2) { --orbit-angle:20deg; --orbit-radius:min(34vw,340px); --ring-width:68vw; --ring-height:66vh; --ring-tilt:-8deg; }
+    .skills-grid .skill-card:nth-of-type(3) { --orbit-angle:145deg; --orbit-radius:min(34vw,340px); --ring-width:68vw; --ring-height:66vh; --ring-tilt:8deg; }
+    .skills-grid .skill-card:nth-of-type(4) { --orbit-angle:250deg; --orbit-radius:min(34vw,340px); --ring-width:68vw; --ring-height:66vh; --ring-tilt:18deg; }
+    .skills-grid .skill-card:nth-of-type(5) { --orbit-angle:70deg; --orbit-radius:210px; --ring-width:52vw; --ring-height:50vh; --ring-tilt:-18deg; }
+    .skills-grid .skill-card:nth-of-type(6) { --orbit-angle:195deg; --orbit-radius:210px; --ring-width:52vw; --ring-height:50vh; --ring-tilt:10deg; }
+    .skills-grid .skill-card:nth-of-type(7) { --orbit-angle:310deg; --orbit-radius:210px; --ring-width:52vw; --ring-height:50vh; --ring-tilt:0deg; }
+    .skills-grid .skill-card:hover { border-color:rgba(167,123,255,.65); box-shadow:0 18px 40px rgba(0,0,0,.32),0 0 28px rgba(147,103,245,.2); }
+    .skills-grid .skill-card > i { color:#a77bff; text-shadow:0 0 18px rgba(147,103,245,.48); }
+    .skills-grid .skill-card h3 { color:#edf5ff; }
+    .skills-grid .skill-card p { color:#9eb0c7; }
+    @media(max-width:767.98px) { .skills-grid { width:90vw; height:68vh; min-height:520px; --orbit-radius:32vw; } .skills-grid .skill-card { width:128px; height:102px; } .skills-grid .skill-card:nth-of-type(1) { --orbit-radius:105px; --ring-width:42vw; --ring-height:32vh; } .skills-grid .skill-card:nth-of-type(2),.skills-grid .skill-card:nth-of-type(3),.skills-grid .skill-card:nth-of-type(4) { --orbit-radius:30vw; --ring-width:76vw; --ring-height:60vh; } .skills-grid .skill-card:nth-of-type(5),.skills-grid .skill-card:nth-of-type(6),.skills-grid .skill-card:nth-of-type(7) { --orbit-radius:20vw; --ring-width:56vw; --ring-height:46vh; } }
+    @media(max-width:575.98px) { .skills-grid { width:94vw; height:64vh; min-height:480px; } .skills-grid .skill-card { width:104px; height:88px; padding:8px 5px; border-radius:15px; } .skills-grid .skill-card h3 { font-size:.76rem; } .skills-grid .skill-card p { font-size:.62rem; } .skills-grid .skill-card > i { font-size:1.4rem; margin-bottom:4px; } .skills-grid .skill-card:nth-of-type(1) { --orbit-radius:78px; --ring-width:48vw; --ring-height:35vh; } .skills-grid .skill-card:nth-of-type(2),.skills-grid .skill-card:nth-of-type(3),.skills-grid .skill-card:nth-of-type(4) { --orbit-radius:34vw; --ring-width:88vw; --ring-height:59vh; } .skills-grid .skill-card:nth-of-type(5),.skills-grid .skill-card:nth-of-type(6),.skills-grid .skill-card:nth-of-type(7) { --orbit-radius:23vw; --ring-width:62vw; --ring-height:45vh; } }
+    @media(max-width:380px) { .skills-grid { height:420px; } .skills-grid .skill-card { width:92px; height:80px; } .skills-grid .skill-card:nth-of-type(2),.skills-grid .skill-card:nth-of-type(3),.skills-grid .skill-card:nth-of-type(4) { --orbit-radius:142px; } .skills-grid .skill-card:nth-of-type(5),.skills-grid .skill-card:nth-of-type(6),.skills-grid .skill-card:nth-of-type(7) { --orbit-radius:100px; } }
+    @media(prefers-reduced-motion:reduce) { .skills-grid .skill-card { animation:none!important; } }
+  </style>
+  <style>
+    /* Smooth, staggered card-opening motion as each portfolio section enters view. */
+    @keyframes cardOpen { from { opacity:0; transform:perspective(900px) translateY(26px) rotateX(5deg) scale(.975); } to { opacity:1; transform:perspective(900px) translateY(0) rotateX(0) scale(1); } }
+    #about { transform-origin:50% 75%; animation:cardOpen .9s cubic-bezier(.2,.75,.25,1) both; }
+    #projects.visible .project-card,
+    #skills.visible .skill-card,
+    .education.visible .timeline-content,
+    #contact.visible .contact-section { backface-visibility:hidden; transform-origin:50% 85%; }
+    #projects.visible .project-card { animation:cardOpen .72s cubic-bezier(.2,.75,.25,1) both; }
+    #projects.visible .col-md-6:nth-child(2) .project-card { animation-delay:.08s; }
+    #projects.visible .col-md-6:nth-child(3) .project-card { animation-delay:.16s; }
+    #projects.visible .col-md-6:nth-child(4) .project-card { animation-delay:.24s; }
+    #projects.visible .col-md-6:nth-child(5) .project-card { animation-delay:.32s; }
+    #projects.visible .col-md-6:nth-child(6) .project-card { animation-delay:.4s; }
+    .education.visible .timeline-content { animation:cardOpen .72s cubic-bezier(.2,.75,.25,1) both; }
+    .education.visible .timeline-item:nth-child(2) .timeline-content { animation-delay:.16s; }
+    #contact .contact-section { opacity:0; transform:translateY(24px) scale(.98); }
+    #contact.visible .contact-section { animation:cardOpen .78s cubic-bezier(.2,.75,.25,1) both; }
+    @keyframes contactContentIn { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+    #contact.visible .contact-intro > * { animation:contactContentIn .65s cubic-bezier(.2,.75,.25,1) both; }
+    #contact.visible .contact-intro > *:nth-child(2) { animation-delay:.12s; }
+    #contact.visible .contact-intro > *:nth-child(3) { animation-delay:.22s; }
+    #contact.visible .contact-intro > *:nth-child(4) { animation-delay:.32s; }
+    #contact.visible .contact-form .mb-3 { animation:contactContentIn .6s cubic-bezier(.2,.75,.25,1) both; }
+    #contact.visible .contact-form .row:nth-child(1) .mb-3:nth-child(1) { animation-delay:.12s; }
+    #contact.visible .contact-form .row:nth-child(1) .mb-3:nth-child(2) { animation-delay:.2s; }
+    #contact.visible .contact-form .row:nth-child(2) .mb-3:nth-child(1) { animation-delay:.28s; }
+    #contact.visible .contact-form .row:nth-child(2) .mb-3:nth-child(2) { animation-delay:.36s; }
+    #contact.visible .contact-form button { animation:contactContentIn .6s .44s cubic-bezier(.2,.75,.25,1) both; }
+    #contact .contact-form .form-control { transition:border-color .25s ease,box-shadow .25s ease,transform .25s ease,background .25s ease; }
+    #contact .contact-form .form-control:hover { border-color:rgba(103,183,255,.4); }
+    #contact .contact-form .form-control:focus { transform:translateY(-2px); }
+    @media(prefers-reduced-motion:reduce) {
+      #about,#projects.visible .project-card,#skills.visible .skill-card,.education.visible .timeline-content,#contact .contact-section { animation:none!important; opacity:1!important; transform:none!important; }
+    }
   </style>
   <style>
     .cursor-glow { position:fixed; left:0; top:0; width:280px; height:280px; z-index:9999; border-radius:50%; pointer-events:none; opacity:0; background:radial-gradient(circle,rgba(83,174,255,.13) 0%,rgba(83,174,255,.055) 34%,transparent 72%); transform:translate3d(-50%,-50%,0); transition:opacity .25s ease; will-change:transform; mix-blend-mode:screen; }
@@ -384,7 +488,7 @@
     @keyframes skillSlideRight { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
     @media(max-width:767.98px) { .skills-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .skill-card { min-height:160px; padding:20px 12px; } }
     @media(max-width:420px) { .skills-grid { grid-template-columns:1fr; } .skill-card { min-height:145px; } }
-    @media(prefers-reduced-motion:reduce) { .skill-card,#skills.visible .skill-card { opacity:1!important; animation:none!important; transform:none!important; transition:none!important; } }
+    @media(prefers-reduced-motion:reduce) { .skill-card,#skills.visible .skill-card { opacity:1!important; animation:none!important; transition:none!important; } #skills.visible .skills-grid .skill-card { transform:translate(-50%,-50%) rotate(var(--orbit-angle)) translateY(-220px) rotate(calc(-1 * var(--orbit-angle)))!important; } }
   </style>
   <style>
     .education { max-width:1100px; margin:0 auto; padding:70px 24px 52px; }
@@ -468,6 +572,97 @@
     .navbar .navbar-nav .nav-link:hover,.navbar .navbar-nav .nav-link.active { color:#a9d8ff!important; }
     @media(max-width:575.98px) { .navbar { width:calc(100% - 20px); top:8px!important; border-radius:15px; } }
   </style>
+  <style>
+    /* Skills: orbit map, two rings around a glowing core. Sized in container units so it scales as one piece. */
+    .sk-wrap { container-type:inline-size; width:min(92vw,960px); margin:12px auto 48px; }
+    .sk-stage { position:relative; aspect-ratio:3/2; }
+    .sk-rings { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+    .sk-ring { fill:none; stroke:url(#skRing); stroke-width:1.4; stroke-opacity:.55; stroke-dasharray:1; stroke-dashoffset:1; filter:drop-shadow(0 0 6px rgba(141,92,246,.35)); }
+    .sk-ring-far { fill:none; stroke:rgba(190,205,240,.14); stroke-width:1; stroke-dasharray:3 9; }
+    .sk-sat { fill:#cfe7ff; filter:drop-shadow(0 0 7px #67b7ff) drop-shadow(0 0 14px rgba(103,183,255,.6)); opacity:0; }
+    .sk-sat-b { fill:#e4c9ff; filter:drop-shadow(0 0 7px #a77bff); }
+    .sk-core { position:absolute; z-index:2; left:50%; top:50%; width:12cqw; height:12cqw; margin:-6cqw 0 0 -6cqw; border-radius:50%; display:grid; place-items:center; text-align:center; color:#fff; font-weight:700; font-size:clamp(.66rem,1.45cqw,1rem); line-height:1.2; background:radial-gradient(circle at 36% 30%,#f4e9ff 0,#b58cff 24%,#6b3fd4 58%,#241b45 100%); box-shadow:0 0 0 1px rgba(231,239,255,.4),0 0 40px 10px rgba(141,92,246,.45),0 0 120px 40px rgba(103,183,255,.16); opacity:0; }
+    .sk-core::before { content:''; position:absolute; inset:-9%; border-radius:50%; background:conic-gradient(from 0deg,transparent 0 62%,rgba(150,210,255,.9) 82%,transparent 100%); -webkit-mask:radial-gradient(circle,transparent 63%,#000 65%,#000 69%,transparent 71%); mask:radial-gradient(circle,transparent 63%,#000 65%,#000 69%,transparent 71%); }
+    .sk-core span { position:relative; text-shadow:0 1px 10px rgba(20,10,50,.6); }
+    .sk-node { position:absolute; z-index:1; left:50%; top:50%; width:14cqw; height:10cqw; margin:-5cqw 0 0 -7cqw; translate:var(--dx) var(--dy); opacity:0; }
+    .sk-card { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.25em; padding:.5em; text-align:center; border:1px solid rgba(162,193,231,.2); border-top-color:color-mix(in srgb,var(--c) 70%,transparent); border-radius:18px; background:radial-gradient(120% 90% at 50% 0,color-mix(in srgb,var(--c) 16%,transparent),transparent 70%),linear-gradient(150deg,rgba(29,40,62,.96),rgba(14,21,36,.97)); box-shadow:0 14px 30px rgba(0,0,0,.3); transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s; animation:skFloat 6s ease-in-out calc(var(--i) * -.9s) infinite alternate; }
+    .sk-card:hover { transform:translateY(-5px) scale(1.05); animation-play-state:paused; border-color:var(--c); box-shadow:0 18px 40px rgba(0,0,0,.4),0 0 30px color-mix(in srgb,var(--c) 45%,transparent); }
+    .sk-badge { display:grid; place-items:center; width:clamp(28px,4.2cqw,44px); aspect-ratio:1; border-radius:50%; color:var(--c); font-size:clamp(.95rem,2.2cqw,1.45rem); background:color-mix(in srgb,var(--c) 18%,transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent),0 0 18px color-mix(in srgb,var(--c) 30%,transparent); transition:transform .35s cubic-bezier(.2,.8,.2,1); }
+    .sk-card:hover .sk-badge { transform:rotate(-8deg) scale(1.12); }
+    .sk-card h3 { margin:0; color:#eef4ff; font-size:clamp(.72rem,1.55cqw,1rem); font-weight:700; }
+    .sk-card p { margin:0; color:#9eb0c7; font-size:clamp(.58rem,1.15cqw,.8rem); }
+    #skills.visible .sk-ring { animation:skDraw 1.8s cubic-bezier(.4,0,.2,1) .1s forwards; }
+    #skills.visible .sk-ring + .sk-ring { animation-delay:.35s; }
+    #skills.visible .sk-sat { animation:skFade .8s 1.8s forwards; }
+    #skills.visible .sk-core { animation:skCore 1s cubic-bezier(.2,.8,.2,1) forwards,skPulse 4.5s ease-in-out 1s infinite alternate; }
+    #skills.visible .sk-core::before { animation:skSpin 9s linear infinite; }
+    #skills.visible .sk-node { animation:skLaunch 1s cubic-bezier(.2,.85,.25,1) calc(.45s + var(--i) * .12s) both; }
+    @keyframes skDraw { to { stroke-dashoffset:0; } }
+    @keyframes skFade { to { opacity:1; } }
+    @keyframes skCore { from { opacity:0; transform:scale(.3); } to { opacity:1; transform:scale(1); } }
+    @keyframes skPulse { to { box-shadow:0 0 0 1px rgba(231,239,255,.4),0 0 54px 16px rgba(141,92,246,.55),0 0 140px 50px rgba(103,183,255,.2); } }
+    @keyframes skSpin { to { transform:rotate(360deg); } }
+    @keyframes skLaunch { from { opacity:0; translate:0 0; scale:.2; } to { opacity:1; translate:var(--dx) var(--dy); scale:1; } }
+    @keyframes skFloat { from { translate:0 -4px; } to { translate:0 5px; } }
+    @keyframes skRise { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+    @media(max-width:719.98px) {
+      .sk-stage { aspect-ratio:auto; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      .sk-rings { display:none; }
+      .sk-core { position:relative; left:auto; top:auto; grid-column:1/-1; width:104px; height:104px; margin:0 auto 10px; font-size:.85rem; }
+      .sk-node { position:static; width:auto; height:auto; margin:0; translate:none; }
+      .sk-node:last-of-type { grid-column:1/-1; justify-self:center; width:calc(50% - 6px); }
+      .sk-card { min-height:130px; padding:14px 8px; animation:none; }
+      .sk-badge { width:42px; font-size:1.3rem; } .sk-card h3 { font-size:.95rem; } .sk-card p { font-size:.75rem; }
+      #skills.visible .sk-node { animation:skRise .7s cubic-bezier(.2,.8,.2,1) calc(.3s + var(--i) * .08s) both; }
+    }
+    @media(prefers-reduced-motion:reduce) {
+      .sk-node,.sk-core,.sk-sat { opacity:1!important; animation:none!important; }
+      .sk-ring { stroke-dashoffset:0!important; animation:none!important; } .sk-card,.sk-core::before { animation:none!important; }
+    }
+  </style>
+  <style>
+    /* Education: animated graphic panel on each card */
+    .education .timeline-content { position:relative; overflow:hidden; padding-right:210px; }
+    .education .timeline-content:hover { translate:6px 0; transform:none; }
+    .education .timeline-item:nth-child(3) .timeline-dot { transition-delay:.4s; }
+    .education.visible .timeline-item:nth-child(3) { transition-delay:.34s; }
+    .education.visible .timeline-item:nth-child(3) .timeline-content { animation-delay:.3s; }
+    .edu-art { position:absolute; right:22px; top:50%; width:164px; height:124px; margin-top:-62px; translate:calc(var(--mx,0) * 10px) calc(var(--my,0) * 8px); transition:translate .25s ease-out; pointer-events:none; }
+    .edu-glow { position:absolute; inset:14% 12%; border-radius:50%; background:radial-gradient(circle,rgba(141,92,246,.5),rgba(93,180,255,.16) 55%,transparent 72%); filter:blur(10px); animation:eduGlow 5s ease-in-out infinite alternate; }
+    .edu-ring { position:absolute; inset:6px 18px; border:1px dashed rgba(190,205,255,.35); border-radius:50%; animation:eduSpin 18s linear infinite; }
+    .edu-chip { position:absolute; display:grid; place-items:center; width:42px; height:42px; border-radius:13px; color:#e9defd; font-size:1.2rem; background:linear-gradient(145deg,rgba(141,92,246,.55),rgba(58,40,120,.75)); border:1px solid rgba(190,170,255,.4); box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 18px rgba(141,92,246,.35); animation:eduBob 4.2s ease-in-out calc(var(--i) * -1.1s) infinite alternate; }
+    .edu-chip:nth-of-type(1) { left:4px; top:10px; } .edu-chip:nth-of-type(2) { right:6px; top:0; } .edu-chip:nth-of-type(3) { left:34px; bottom:2px; } .edu-chip:nth-of-type(4) { right:10px; bottom:12px; }
+    .edu-chip:nth-of-type(2n) { color:#bfe4ff; background:linear-gradient(145deg,rgba(60,140,220,.5),rgba(25,50,100,.75)); border-color:rgba(130,190,255,.4); }
+    .education.visible .edu-chip { animation:eduIn .7s cubic-bezier(.2,.9,.25,1.2) calc(.5s + var(--i) * .12s) backwards,eduBob 4.2s ease-in-out calc(var(--i) * -1.1s) infinite alternate; }
+    @keyframes eduBob { from { translate:0 -7px; rotate:-4deg; } to { translate:0 7px; rotate:4deg; } }
+    @keyframes eduIn { from { opacity:0; scale:.3; } to { opacity:1; scale:1; } }
+    @keyframes eduSpin { to { transform:rotate(360deg); } }
+    @keyframes eduGlow { from { opacity:.55; transform:scale(.9); } to { opacity:1; transform:scale(1.12); } }
+    @media(max-width:575.98px) {
+      .education .timeline-content { padding-right:19px; }
+      .edu-art { position:relative; right:auto; top:auto; width:100%; height:52px; margin:16px 0 0; translate:none; }
+      .edu-ring,.edu-glow { display:none; }
+      .edu-chip { position:static; display:inline-grid; margin-right:10px; width:38px; height:38px; }
+      .edu-art { display:flex; }
+    }
+    @media(prefers-reduced-motion:reduce) { .edu-art,.edu-chip,.edu-glow,.edu-ring { animation:none!important; translate:none!important; } .education .timeline-item { opacity:1; transform:none; } }
+  </style>
+  <style>
+    /* Education: each card reveals on its own, slowly, as it scrolls into view. */
+    .education.js-reveal .timeline-item { margin-bottom:64px; }
+    .education.js-reveal .timeline-item:last-child { margin-bottom:0; }
+    .education.js-reveal .timeline-item:not(.in-view) { opacity:0; transform:translateY(56px); transition-delay:0s; }
+    .education.js-reveal .timeline-item.in-view { opacity:1; transform:none; transition:opacity 1.4s ease,transform 1.4s cubic-bezier(.22,.8,.25,1); transition-delay:0s; }
+    .education.js-reveal .timeline-item .timeline-content { animation:none; }
+    .education.js-reveal .timeline-item.in-view .timeline-content { animation:eduCardIn 1.5s cubic-bezier(.22,.8,.25,1) both; }
+    .education.js-reveal .timeline-item:not(.in-view) .timeline-dot { transform:scale(0); }
+    .education.js-reveal .timeline-item.in-view .timeline-dot { transform:scale(1); transition:transform .8s cubic-bezier(.2,.9,.25,1.3) .35s; }
+    .education.js-reveal .timeline::before { transform:scaleY(var(--prog,0)); transition:transform .25s linear; }
+    .education.js-reveal .timeline-item:not(.in-view) .edu-chip { animation:none; opacity:0; }
+    .education.js-reveal .timeline-item.in-view .edu-chip { animation:eduIn .9s cubic-bezier(.2,.9,.25,1.2) calc(.8s + var(--i) * .16s) backwards,eduBob 4.2s ease-in-out calc(var(--i) * -1.1s) infinite alternate; }
+    @keyframes eduCardIn { from { opacity:0; transform:perspective(900px) translateX(-34px) rotateY(8deg) scale(.95); } to { opacity:1; transform:perspective(900px) none; } }
+    @media(prefers-reduced-motion:reduce) { .education.js-reveal .timeline-item,.education.js-reveal .timeline-item .timeline-content,.education.js-reveal .timeline-item .timeline-dot { opacity:1!important; transform:none!important; animation:none!important; transition:none!important; } .education.js-reveal .timeline::before { transform:scaleY(1); } }
+  </style>
 </head>
 <body>
   <video class="background-video" autoplay muted loop playsinline aria-hidden="true">
@@ -511,16 +706,52 @@
 
   <!-- Skills Section -->
     <section id="skills" class="container py-4 animated-section">
-    <h2 class="section-title">Skills</h2>
-    <div class="skills-grid">
-      <article class="skill-card"><i class="bi bi-filetype-html" aria-hidden="true"></i><h3>HTML5</h3><p>Web Structure</p></article>
-      <article class="skill-card"><i class="bi bi-filetype-css" aria-hidden="true"></i><h3>CSS3</h3><p>Modern Styling</p></article>
-      <article class="skill-card"><i class="bi bi-filetype-js" aria-hidden="true"></i><h3>JavaScript</h3><p>Interactive Web</p></article>
-      <article class="skill-card"><i class="bi bi-code-slash" aria-hidden="true"></i><h3>React</h3><p>Component Interfaces</p></article>
-      <article class="skill-card"><i class="bi bi-database-fill" aria-hidden="true"></i><h3>Database & SQL</h3><p>Data Management</p></article>
-      <article class="skill-card"><i class="bi bi-github" aria-hidden="true"></i><h3>Git & GitHub</h3><p>Version Control</p></article>
-      <article class="skill-card"><i class="bi bi-film" aria-hidden="true"></i><h3>Motion Graphics</h3><p>Animated Visuals</p></article>
+    <h2 class="visually-hidden">Skills</h2>
+    <div class="sk-wrap">
+      <div class="sk-stage">
+        <svg class="sk-rings" viewBox="0 0 960 640" aria-hidden="true">
+          <defs><linearGradient id="skRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8d5cf6"/><stop offset="1" stop-color="#5db4ff"/></linearGradient></defs>
+          <ellipse class="sk-ring-far" cx="480" cy="320" rx="462" ry="308"/>
+          <ellipse class="sk-ring" cx="480" cy="320" rx="400" ry="270" pathLength="1"/>
+          <ellipse class="sk-ring" cx="480" cy="320" rx="163" ry="110" pathLength="1"/>
+          <circle class="sk-sat" r="5"><animateMotion dur="22s" repeatCount="indefinite" path="M 880 320 A 400 270 0 1 1 80 320 A 400 270 0 1 1 880 320 Z"/></circle>
+          <circle class="sk-sat sk-sat-b" r="4"><animateMotion dur="14s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear" path="M 643 320 A 163 110 0 1 1 317 320 A 163 110 0 1 1 643 320 Z"/></circle>
+        </svg>
+        <div class="sk-core"><span>Web<br>Developer</span></div>
+      <article class="sk-node" style="--dx:0cqw;--dy:-13.54cqw;--c:#ff8a5b;--i:0"><div class="sk-card"><span class="sk-badge"><i class="bi bi-filetype-html" aria-hidden="true"></i></span><h3>HTML5</h3><p>Web Structure</p></div></article>
+      <article class="sk-node" style="--dx:17.14cqw;--dy:6.77cqw;--c:#5db4ff;--i:1"><div class="sk-card"><span class="sk-badge"><i class="bi bi-filetype-css" aria-hidden="true"></i></span><h3>CSS3</h3><p>Modern Styling</p></div></article>
+      <article class="sk-node" style="--dx:-17.14cqw;--dy:6.77cqw;--c:#f5d35c;--i:2"><div class="sk-card"><span class="sk-badge"><i class="bi bi-filetype-js" aria-hidden="true"></i></span><h3>JavaScript</h3><p>Interactive Web</p></div></article>
+      <article class="sk-node" style="--dx:-29.46cqw;--dy:-19.89cqw;--c:#61dafb;--i:3"><div class="sk-card"><span class="sk-badge"><i class="bi bi-code-slash" aria-hidden="true"></i></span><h3>React</h3><p>Component Interfaces</p></div></article>
+      <article class="sk-node" style="--dx:29.46cqw;--dy:-19.89cqw;--c:#5fe3a6;--i:4"><div class="sk-card"><span class="sk-badge"><i class="bi bi-database-fill" aria-hidden="true"></i></span><h3>Database &amp; SQL</h3><p>Data Management</p></div></article>
+      <article class="sk-node" style="--dx:-29.46cqw;--dy:19.89cqw;--c:#ff7b9c;--i:5"><div class="sk-card"><span class="sk-badge"><i class="bi bi-github" aria-hidden="true"></i></span><h3>Git &amp; GitHub</h3><p>Version Control</p></div></article>
+      <article class="sk-node" style="--dx:29.46cqw;--dy:19.89cqw;--c:#b58cff;--i:6"><div class="sk-card"><span class="sk-badge"><i class="bi bi-film" aria-hidden="true"></i></span><h3>Motion Graphics</h3><p>Animated Visuals</p></div></article>
+      </div>
     </div>
+    <script>
+(function(){
+  var rm=matchMedia('(prefers-reduced-motion: reduce)'), wide=matchMedia('(min-width:720px)');
+  if(rm.matches){document.querySelectorAll('.sk-rings').forEach(function(v){v.pauseAnimations&&v.pauseAnimations();});return;}
+  var nodes=[].slice.call(document.querySelectorAll('.sk-node'));
+  // ring radii in cqw, start angle (deg), direction, seconds per lap
+  var rings=[{rx:17,ry:11.5,dir:1,T:22},{rx:41.67,ry:28.13,dir:-1,T:36}];
+  var cfg=[[0,-90],[0,30],[0,150],[1,-135],[1,-45],[1,135],[1,45]];
+  var st=nodes.map(function(n,i){return{n:n,r:rings[cfg[i][0]],a:cfg[i][1]*Math.PI/180,live:false};});
+  st.forEach(function(o){o.n.addEventListener('animationend',function(e){if(e.animationName==='skLaunch'){o.live=true;o.n.style.animation='none';o.n.style.opacity='1';}});});
+  var paused=false,last=0;
+  nodes.forEach(function(n){n.addEventListener('pointerenter',function(){paused=true;});n.addEventListener('pointerleave',function(){paused=false;});});
+  function tick(t){
+    var dt=last?Math.min((t-last)/1000,.1):0;last=t;
+    st.forEach(function(o){
+      if(!o.live)return;
+      if(!wide.matches){o.n.style.translate='';return;}
+      if(!paused)o.a+=o.r.dir*dt*2*Math.PI/o.r.T;
+      o.n.style.translate=(o.r.rx*Math.cos(o.a)).toFixed(3)+'cqw '+(o.r.ry*Math.sin(o.a)).toFixed(3)+'cqw';
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
   </section>
 
   <!-- Projects Section -->
@@ -587,7 +818,7 @@
 
                 <div class="timeline-dot"></div>
 
-                <div class="timeline-content">
+                <div class="timeline-content"><div class="edu-art" aria-hidden="true"><span class="edu-ring"></span><span class="edu-glow"></span><span class="edu-chip" style="--i:0"><i class="bi bi-mortarboard-fill"></i></span><span class="edu-chip" style="--i:1"><i class="bi bi-code-slash"></i></span><span class="edu-chip" style="--i:2"><i class="bi bi-cpu"></i></span><span class="edu-chip" style="--i:3"><i class="bi bi-journal-code"></i></span></div>
 
                     <span>Current</span>
 
@@ -611,7 +842,7 @@
 
                 <div class="timeline-dot"></div>
 
-                <div class="timeline-content">
+                <div class="timeline-content"><div class="edu-art" aria-hidden="true"><span class="edu-ring"></span><span class="edu-glow"></span><span class="edu-chip" style="--i:0"><i class="bi bi-cup-hot-fill"></i></span><span class="edu-chip" style="--i:1"><i class="bi bi-database-fill"></i></span><span class="edu-chip" style="--i:2"><i class="bi bi-hdd-network"></i></span><span class="edu-chip" style="--i:3"><i class="bi bi-window-stack"></i></span></div>
 
                     <span>Learning</span>
 
@@ -624,6 +855,17 @@
                 </div>
 
             </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content"><div class="edu-art" aria-hidden="true"><span class="edu-ring"></span><span class="edu-glow"></span><span class="edu-chip" style="--i:0"><i class="bi bi-stars"></i></span><span class="edu-chip" style="--i:1"><i class="bi bi-robot"></i></span><span class="edu-chip" style="--i:2"><i class="bi bi-chat-dots-fill"></i></span><span class="edu-chip" style="--i:3"><i class="bi bi-lightning-charge-fill"></i></span></div>
+                    <span>Learning</span>
+                    <h3>AI Tools for Development</h3>
+                    <p>Using AI assistants to learn concepts, debug code and build projects faster.</p>
+                    <p>Prompting • Debugging • Rapid prototyping</p>
+                </div>
+            </div>
+
 
         </div>
 
@@ -769,8 +1011,43 @@
       document.documentElement.addEventListener('pointerenter', () => glow.classList.add('is-visible'));
     })();
   </script>
+<script>
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!matchMedia('(hover:hover)').matches)return;
+  document.querySelectorAll('.education .timeline-content').forEach(function(c){
+    var art=c.querySelector('.edu-art');
+    c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();art.style.setProperty('--mx',((e.clientX-r.left)/r.width-.5)*-2);art.style.setProperty('--my',((e.clientY-r.top)/r.height-.5)*-2);});
+    c.addEventListener('pointerleave',function(){art.style.setProperty('--mx',0);art.style.setProperty('--my',0);});
+  });
+})();
+</script>
+<script>
+(function(){
+  var sec=document.getElementById('education'); if(!sec)return;
+  var items=[].slice.call(sec.querySelectorAll('.timeline-item')), tl=sec.querySelector('.timeline');
+  sec.classList.add('js-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!('IntersectionObserver' in window)){items.forEach(function(i){i.classList.add('in-view');});tl.style.setProperty('--prog',1);return;}
+  var queue=[],busy=false;
+  function next(){
+    if(busy||!queue.length)return; busy=true;
+    queue.shift().classList.add('in-view');
+    setTimeout(function(){busy=false;next();},900);   // one card at a time
+  }
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){io.unobserve(e.target);queue.push(e.target);}});
+    queue.sort(function(a,b){return items.indexOf(a)-items.indexOf(b);});
+    next();
+  },{rootMargin:'0px 0px -22% 0px',threshold:.15});
+  items.forEach(function(i){io.observe(i);});
+  var tick=false;
+  function prog(){tick=false;var r=tl.getBoundingClientRect(),m=innerHeight*.72;tl.style.setProperty('--prog',Math.max(0,Math.min(1,(m-r.top)/r.height)).toFixed(3));}
+  function req(){if(!tick){tick=true;requestAnimationFrame(prog);}}
+  addEventListener('scroll',req,{passive:true});addEventListener('resize',req);prog();
+})();
+</script>
 </body>
 </html>
+
 
 
 
