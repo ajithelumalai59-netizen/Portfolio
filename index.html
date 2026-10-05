@@ -1595,251 +1595,358 @@
 })();
 </script>
   <script>
-    /* Galaxy + moving stars background (v2: parallax, warp streaks, comets) */
+    /* Galaxy v3: pre-rendered spiral galaxy (arms, dust lanes, HII knots, bar + bulge), parallax star layers,
+       nebula clouds, distant galaxies, meteors, supernova flares, scroll warp + spin, click shockwave */
     (() => {
       const canvas = document.querySelector('.galaxy-canvas');
       const ctx = canvas && canvas.getContext('2d');
       if (!canvas || !ctx) return;
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-
       const TAU = Math.PI * 2;
       const rand = (a, b) => a + Math.random() * (b - a);
       const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
       const lerp = (a, b, t) => a + (b - a) * t;
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-      let W = 0, H = 0, stars = [], dust = [], comets = [], bursts = [];
-      let frame = 0, last = 0, time = 0, nextComet = 2.5;
-      let gx = 0, gy = 0, gR = 0;
-      // interaction state (all eased so motion feels smooth, never jumpy)
-      let mx = 0, my = 0, tmx = 0, tmy = 0;          // pointer -1..1
-      let scrollY = scrollY0(), prevScroll = scrollY, scrollVel = 0;
-      function scrollY0() { return window.pageYOffset || 0; }
+      /* ---------- sprites ---------- */
+      function sprite(size, stops) {
+        const c = document.createElement('canvas'); c.width = c.height = size;
+        const g = c.getContext('2d'), r = size / 2, gr = g.createRadialGradient(r, r, 0, r, r, r);
+        stops.forEach(s => gr.addColorStop(s[0], s[1]));
+        g.fillStyle = gr; g.fillRect(0, 0, size, size); return c;
+      }
+      const glowCache = {};
+      function glow(r, g, b) {
+        r = (r >> 4) << 4; g = (g >> 4) << 4; b = (b >> 4) << 4;
+        const k = r + ',' + g + ',' + b;
+        return glowCache[k] || (glowCache[k] = sprite(64, [[0, `rgba(${r},${g},${b},1)`], [.1, `rgba(${r},${g},${b},.65)`],
+          [.32, `rgba(${r},${g},${b},.16)`], [1, `rgba(${r},${g},${b},0)`]]));
+      }
+      const darkSprite = sprite(64, [[0, 'rgba(0,0,0,1)'], [.5, 'rgba(0,0,0,.45)'], [1, 'rgba(0,0,0,0)']]);
+      const spike = (() => {
+        const c = document.createElement('canvas'); c.width = 128; c.height = 128; const g = c.getContext('2d');
+        let h = g.createLinearGradient(0, 64, 128, 64);
+        h.addColorStop(0, 'rgba(255,255,255,0)'); h.addColorStop(.5, 'rgba(255,255,255,.95)'); h.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = h; g.fillRect(0, 63, 128, 2);
+        let v = g.createLinearGradient(64, 0, 64, 128);
+        v.addColorStop(0, 'rgba(255,255,255,0)'); v.addColorStop(.5, 'rgba(255,255,255,.95)'); v.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = v; g.fillRect(63, 0, 2, 128); return c;
+      })();
 
-      const SQUASH = 0.40;
+      /* ---------- state ---------- */
+      let W = 0, H = 0, ratio = 1, frame = 0, last = 0, time = 0;
+      let gx = 0, gy = 0, gR = 0, tex = null, live = [], stars = [], clouds = [], far = [];
+      let comets = [], novas = [], bursts = [], rings = [];
+      let nextComet = 2, nextNova = 9, qual = 1, slow = 0, fast = 0;
+      let mx = 0, my = 0, tmx = 0, tmy = 0, spin = 0, spinBoost = 0;
+      const sy0 = () => window.pageYOffset || 0;
+      let sy = sy0(), prevSy = sy, scrollVel = 0;
 
-      function build() {
-        const ratio = Math.min(devicePixelRatio || 1, 2);
-        W = innerWidth; H = innerHeight;
-        canvas.width = Math.round(W * ratio);
-        canvas.height = Math.round(H * ratio);
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        const area = Math.min(1, (W * H) / (1400 * 850));
-        const mobile = W < 700;
+      const STARCOL = [[255, 255, 255], [175, 205, 255], [255, 222, 185], [255, 180, 150], [205, 180, 255]];
+      function colorAt(t) {
+        const S = [[0, [255, 232, 192]], [.2, [255, 205, 165]], [.5, [212, 178, 255]], [.8, [140, 172, 255]], [1, [105, 202, 255]]];
+        for (let i = 1; i < S.length; i++) if (t <= S[i][0]) {
+          const k = (t - S[i - 1][0]) / (S[i][0] - S[i - 1][0]), a = S[i - 1][1], b = S[i][1];
+          return [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)].map(v => clamp(v + rand(-14, 14), 0, 255) | 0);
+        }
+        return S[S.length - 1][1];
+      }
+      const BAR = .55;
+      function armPos(arm, t, scatter) {            // logarithmic-style spiral, returns unit-radius x,y
+        const a = BAR + arm * TAU / 4 + 2.3 * Math.log(1 + t * 8) + gauss() * scatter * (.4 - .2 * t);
+        const r = t * (1 + gauss() * .015);
+        return [Math.cos(a) * r, Math.sin(a) * r, a];
+      }
+      function pickArm() { return Math.random() < .72 ? (Math.random() < .5 ? 0 : 2) : (Math.random() < .5 ? 1 : 3); }
 
-        // 4 depth layers: depth drives speed, parallax, size and brightness
-        const layers = [
-          { n: 130, d: .15, size: [.35, .8],  speed: [3, 7],   alpha: [.25, .55] },
-          { n: 80,  d: .35, size: [.7, 1.2],  speed: [8, 15],  alpha: [.4, .75] },
-          { n: 40,  d: .65, size: [1.1, 1.8], speed: [18, 30], alpha: [.55, .9] },
-          { n: 14,  d: 1,   size: [1.8, 2.6], speed: [34, 52], alpha: [.7, 1] }
-        ];
+      /* ---------- galaxy texture (rendered once) ---------- */
+      function buildTexture(area, mobile) {
+        const T = Math.round(clamp(gR * 2.5 * ratio, 600, 1500));
+        tex = document.createElement('canvas'); tex.width = tex.height = T;
+        const g = tex.getContext('2d'), C = T / 2, R = T / 2.5;
+        g.globalCompositeOperation = 'lighter';
+        // 1. diffuse arm glow
+        for (let i = 0; i < 300; i++) {
+          const arm = pickArm(), t = rand(.05, .98), p = armPos(arm, t, 1.1), c = colorAt(t);
+          const sz = R * rand(.06, .14) * (1.1 - t * .4);
+          g.globalAlpha = rand(.025, .07) * (1 - t * .45);
+          g.drawImage(glow(c[0], c[1], c[2]), C + p[0] * R - sz, C + p[1] * R - sz, sz * 2, sz * 2);
+        }
+        // 2. stars
+        const N = Math.round((mobile ? 5200 : 9500) * (.55 + .45 * area));
+        for (let i = 0; i < N; i++) {
+          let x, y, t;
+          const roll = Math.random();
+          if (roll < .15) {                                   // bulge
+            t = Math.pow(Math.random(), 2.2) * .24; const a = rand(0, TAU);
+            x = Math.cos(a) * t * 1.15; y = Math.sin(a) * t * .85;
+          } else if (roll < .22) {                            // bar
+            const u = gauss() * .3, v = gauss() * .06;
+            x = u * Math.cos(BAR) - v * Math.sin(BAR); y = u * Math.sin(BAR) + v * Math.cos(BAR); t = Math.hypot(x, y);
+          } else {                                            // arms + inter-arm disc
+            t = Math.pow(Math.random(), .8) * .98 + .02;
+            const p = Math.random() < .86 ? armPos(pickArm(), t, 1) : armPos(pickArm(), t, 3.2);
+            x = p[0]; y = p[1];
+          }
+          const c = colorAt(Math.min(1, t)), bright = Math.pow(Math.random(), 3);
+          const a = clamp((.22 + bright * .8) * (1 - t * .4), 0, 1);
+          if (bright > .8 && t > .12) {
+            const sz = (1.6 + bright * 3.2) * ratio;
+            g.globalAlpha = a * .55;
+            g.drawImage(glow(c[0], c[1], c[2]), C + x * R - sz * 2, C + y * R - sz * 2, sz * 4, sz * 4);
+          }
+          g.globalAlpha = a;
+          g.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+          const s = (.55 + bright * 1.2) * ratio;
+          g.fillRect(C + x * R - s / 2, C + y * R - s / 2, s, s);
+        }
+        // 3. pink HII knots along the arms
+        for (let i = 0; i < 80; i++) {
+          const t = rand(.25, .93), p = armPos(pickArm(), t, .6), sz = R * rand(.012, .032);
+          g.globalAlpha = rand(.18, .4);
+          g.drawImage(glow(255, 110, 190), C + p[0] * R - sz * 2, C + p[1] * R - sz * 2, sz * 4, sz * 4);
+          g.globalAlpha = .55;
+          g.drawImage(glow(255, 235, 245), C + p[0] * R - sz * .5, C + p[1] * R - sz * .5, sz, sz);
+        }
+        // 4. dust lanes on the inner edge of the arms
+        g.globalCompositeOperation = 'destination-out';
+        for (let i = 0; i < 520; i++) {
+          const t = rand(.13, .95), arm = pickArm(), p = armPos(arm, t, .5);
+          const a = p[2] - (.2 - t * .08), r = t, sz = R * rand(.018, .05);
+          g.globalAlpha = rand(.08, .24);
+          g.drawImage(darkSprite, C + Math.cos(a) * r * R - sz, C + Math.sin(a) * r * R - sz, sz * 2, sz * 2);
+        }
+        // 5. glowing bulge on top so the core stays bright
+        g.globalCompositeOperation = 'lighter'; g.globalAlpha = 1;
+        const bg = g.createRadialGradient(C, C, 0, C, C, R * .3);
+        bg.addColorStop(0, 'rgba(255,240,215,.75)'); bg.addColorStop(.25, 'rgba(255,205,160,.4)');
+        bg.addColorStop(.6, 'rgba(210,150,255,.12)'); bg.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = bg; g.fillRect(0, 0, T, T);
+      }
+
+      /* ---------- the rest of the scene ---------- */
+      function buildScene(area, mobile) {
+        live = [];                                            // bright, twinkling stars riding the arms
+        const nl = Math.round((mobile ? 90 : 190) * (.5 + .5 * area));
+        for (let i = 0; i < nl; i++) {
+          const t = Math.pow(Math.random(), .75) * .95 + .04, p = armPos(pickArm(), t, 1), c = colorAt(t);
+          live.push({ x: p[0], y: p[1], c, s: rand(1.2, 3.4), tw: rand(.8, 3.2), ph: rand(0, TAU), a: rand(.5, 1) });
+        }
+        const layers = [{ n: 150, d: .12, s: [.35, .8], v: [2, 5], a: [.25, .55] }, { n: 90, d: .3, s: [.7, 1.2], v: [5, 10], a: [.4, .75] },
+          { n: 45, d: .6, s: [1.1, 1.8], v: [10, 20], a: [.55, .9] }, { n: 16, d: 1, s: [1.8, 2.8], v: [18, 32], a: [.75, 1] }];
         stars = [];
         layers.forEach(l => {
-          const count = Math.round(l.n * (.45 + .55 * area));
-          for (let i = 0; i < count; i++) {
-            const roll = Math.random();
-            stars.push({
-              x: Math.random() * W, y: Math.random() * H, d: l.d,
-              r: rand(...l.size), v: rand(...l.speed), a: rand(...l.alpha),
-              tw: rand(.7, 3), ph: Math.random() * TAU,
-              col: roll < .18 ? '255,222,185' : roll < .5 ? '175,205,255' : '255,255,255'
-            });
+          const n = Math.round(l.n * (.45 + .55 * area));
+          for (let i = 0; i < n; i++) {
+            const r = Math.random();
+            stars.push({ x: Math.random() * W, y: Math.random() * H, d: l.d, r: rand(...l.s), v: rand(...l.v), a: rand(...l.a),
+              tw: rand(.7, 3), ph: rand(0, TAU), c: r < .16 ? STARCOL[2] : r < .26 ? STARCOL[3] : r < .34 ? STARCOL[4] : r < .6 ? STARCOL[1] : STARCOL[0] });
           }
         });
-
-        // Galaxy: big, centred behind the hero, drifts with scroll + pointer
-        gR = Math.min(W, H) * (mobile ? .62 : .66);
-        gx = W * (mobile ? .5 : .62);
-        gy = H * (mobile ? .34 : .46);
-        dust = [];
-        const total = Math.round(1500 * (.5 + .5 * area));
-        const arms = 4;
-        for (let i = 0; i < total; i++) {
-          const bulge = i % 7 === 0;
-          const t = bulge ? Math.pow(Math.random(), 2.2) * .22 : Math.pow(Math.random(), .8);
-          const arm = i % arms;
-          const base = bulge ? Math.random() * TAU
-                             : arm * (TAU / arms) + t * 5.6 + gauss() * (.5 - t * .22);
-          const c = t < .2 ? [255, 228, 188] : t < .5 ? [205, 160, 255]
-                  : t < .8 ? [135, 155, 255] : [105, 185, 255];
-          dust.push({
-            r: t * gR, base, w: .2 / (.22 + t),
-            s: rand(.5, 1.8) * (t < .15 ? 1.15 : 1),
-            a: rand(.25, .95) * (1 - t * .5),
-            tw: rand(.5, 2.5), ph: Math.random() * TAU, c
-          });
+        const cloud = (rgbs) => {
+          const S = 520, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+          g.globalCompositeOperation = 'lighter';
+          for (let i = 0; i < 46; i++) {
+            const col = rgbs[i % rgbs.length], r = S * rand(.07, .2), x = S / 2 + gauss() * S * .2, y = S / 2 + gauss() * S * .2;
+            g.globalAlpha = rand(.05, .13); g.drawImage(glow(col[0], col[1], col[2]), x - r, y - r, r * 2, r * 2);
+          } return c;
+        };
+        const M = Math.max(W, H);
+        clouds = [
+          { t: cloud([[70, 95, 235], [110, 80, 230]]), x: .14, y: .2, s: M * .85, rot: .3, a: .75, sp: .004 },
+          { t: cloud([[190, 70, 215], [120, 60, 200]]), x: .9, y: .82, s: M * .8, rot: 1.2, a: .65, sp: -.003 },
+          { t: cloud([[30, 160, 225], [50, 120, 220]]), x: .48, y: .62, s: M * .6, rot: 2.4, a: .45, sp: .002 },
+          { t: cloud([[255, 120, 170], [150, 80, 220]]), x: .78, y: .12, s: M * .5, rot: 4, a: .35, sp: -.004 }];
+        far = [];
+        for (let i = 0; i < (mobile ? 4 : 8); i++) {
+          const k = rand(0, 1);
+          far.push({ x: Math.random(), y: Math.random(), s: rand(9, 24), rot: rand(0, Math.PI), sq: rand(.22, .6),
+            c: k < .5 ? [255, 225, 190] : [175, 200, 255], a: rand(.35, .75), ph: rand(0, TAU) });
         }
       }
 
+      function build() {
+        ratio = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+        canvas.width = Math.round(W * ratio); canvas.height = Math.round(H * ratio);
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        const area = Math.min(1, (W * H) / (1400 * 850)), mobile = W < 700;
+        gR = Math.min(W, H) * (mobile ? .66 : .7); gx = W * (mobile ? .5 : .64); gy = H * (mobile ? .36 : .47);
+        buildTexture(area, mobile); buildScene(area, mobile);
+      }
+
+      /* ---------- drawing ---------- */
       function drawNebula() {
-        const p = 1 + Math.sin(time * .18) * .07;
-        const R = Math.max(W, H);
-        const ox = -mx * 18, oy = -my * 12 - scrollY * .02;
-        [[W * .16 + ox, H * .2 + oy, R * .45 * p, 'rgba(70,95,235,.17)'],
-         [W * .88 + ox, H * .85 + oy, R * .4 * p,  'rgba(160,70,205,.15)'],
-         [W * .5 + ox,  H * .6 + oy,  R * .3 / p,  'rgba(30,150,225,.08)']
-        ].forEach(([x, y, r, c]) => {
-          const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-          g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-        });
-      }
-
-      function drawStars(dt) {
-        const warp = Math.min(Math.abs(scrollVel) / 1400, 1);   // 0..1 from scroll speed
-        const dir = scrollVel >= 0 ? 1 : -1;
-        for (const s of stars) {
-          if (!reduced) {
-            s.x += s.v * dt;
-            s.y += s.v * .22 * dt;
-          }
-          const px = mx * 26 * s.d, py = my * 18 * s.d;
-          let x = ((s.x + px) % (W + 8) + (W + 8)) % (W + 8) - 4;
-          let y = ((s.y + py - scrollY * .22 * s.d) % (H + 8) + (H + 8)) % (H + 8) - 4;
-          const tw = .65 + .35 * Math.sin(time * s.tw + s.ph);
-          const alpha = Math.min(1, s.a * tw * (1 + warp * .5));
-
-          if (warp > .04 && s.d > .3) {              // stretch into warp streaks while scrolling
-            const len = warp * 46 * s.d;
-            const g = ctx.createLinearGradient(x, y, x, y - dir * len);
-            g.addColorStop(0, 'rgba(' + s.col + ',' + alpha.toFixed(3) + ')');
-            g.addColorStop(1, 'rgba(' + s.col + ',0)');
-            ctx.strokeStyle = g; ctx.lineWidth = s.r * 1.1; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - dir * len); ctx.stroke();
-          }
-          ctx.fillStyle = 'rgba(' + s.col + ',' + alpha.toFixed(3) + ')';
-          ctx.beginPath(); ctx.arc(x, y, s.r, 0, TAU); ctx.fill();
-          if (s.r > 1.5) {                           // soft glow + cross sparkle on the brightest
-            ctx.fillStyle = 'rgba(' + s.col + ',' + (alpha * .14).toFixed(3) + ')';
-            ctx.beginPath(); ctx.arc(x, y, s.r * 3.6, 0, TAU); ctx.fill();
-            if (s.r > 2.2 && tw > .85) {
-              ctx.strokeStyle = 'rgba(' + s.col + ',' + (alpha * .5).toFixed(3) + ')';
-              ctx.lineWidth = .7;
-              ctx.beginPath();
-              ctx.moveTo(x - s.r * 4, y); ctx.lineTo(x + s.r * 4, y);
-              ctx.moveTo(x, y - s.r * 4); ctx.lineTo(x, y + s.r * 4);
-              ctx.stroke();
-            }
-          }
+        ctx.globalCompositeOperation = 'lighter';
+        for (const c of clouds) {
+          const pulse = .85 + .15 * Math.sin(time * .25 + c.rot);
+          ctx.save();
+          ctx.translate(c.x * W - mx * 20 + Math.sin(time * .05 + c.rot) * 18, c.y * H - my * 14 - sy * .03);
+          ctx.rotate(c.rot + time * c.sp);
+          ctx.globalAlpha = c.a * pulse;
+          ctx.drawImage(c.t, -c.s / 2, -c.s / 2, c.s, c.s);
+          ctx.restore();
         }
+        for (const f of far) {
+          const x = f.x * W - mx * 6, y = (f.y * H - sy * .05 + H * 4) % H, a = f.a * (.8 + .2 * Math.sin(time * .6 + f.ph));
+          ctx.save(); ctx.translate(x, y); ctx.rotate(f.rot); ctx.scale(1, f.sq);
+          ctx.globalAlpha = a * .6; ctx.drawImage(glow(f.c[0], f.c[1], f.c[2]), -f.s, -f.s, f.s * 2, f.s * 2);
+          ctx.restore();
+          ctx.globalAlpha = a; ctx.drawImage(glow(255, 250, 240), x - 2.5, y - 2.5, 5, 5);
+        }
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
 
       function drawGalaxy() {
-        // floating drift + parallax so the galaxy feels like it sits far behind the page
-        const cx = gx + Math.sin(time * .11) * 14 + mx * 22;
-        const cy = gy + Math.cos(time * .09) * 10 + my * 16 - scrollY * .14;
-        const tilt = -.45 + Math.sin(time * .07) * .08;      // slow precession
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(tilt);
-
-        const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, gR * 1.1);
-        halo.addColorStop(0, 'rgba(255,225,190,.32)');
-        halo.addColorStop(.12, 'rgba(190,150,255,.17)');
-        halo.addColorStop(.5, 'rgba(90,110,230,.07)');
-        halo.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.save(); ctx.scale(1, SQUASH);
-        ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(0, 0, gR * 1.1, 0, TAU); ctx.fill();
-        ctx.restore();
-
+        const cx = gx + Math.sin(time * .11) * 14 + mx * 26;
+        const cy = gy + Math.cos(time * .09) * 10 + my * 18 - sy * .14;
+        const tilt = -.45 + Math.sin(time * .07) * .08 + mx * .05, SQ = .4 + my * .035 + Math.sin(time * .05) * .015;
+        const cs = Math.cos(tilt), sn = Math.sin(tilt), cr = Math.cos(spin), sr = Math.sin(spin);
+        const proj = (x, y) => {                              // unit galaxy coords -> screen
+          const rx = (x * cr - y * sr) * gR, ry = (x * sr + y * cr) * gR * SQ;
+          return [cx + rx * cs - ry * sn, cy + rx * sn + ry * cs];
+        };
         ctx.globalCompositeOperation = 'lighter';
-        for (const d of dust) {
-          const ang = d.base + time * d.w;
-          const tw = .75 + .25 * Math.sin(time * d.tw + d.ph);
-          ctx.fillStyle = 'rgba(' + d.c[0] + ',' + d.c[1] + ',' + d.c[2] + ',' + (d.a * tw).toFixed(3) + ')';
-          ctx.fillRect(Math.cos(ang) * d.r, Math.sin(ang) * d.r * SQUASH, d.s, d.s);
-        }
-        const pulse = 1 + Math.sin(time * 1.3) * .1;
-        const cr = gR * .1 * pulse;
-        const core = ctx.createRadialGradient(0, 0, 0, 0, 0, cr);
-        core.addColorStop(0, 'rgba(255,250,235,.95)');
-        core.addColorStop(.4, 'rgba(255,215,170,.45)');
-        core.addColorStop(1, 'rgba(255,200,150,0)');
-        ctx.fillStyle = core; ctx.beginPath(); ctx.arc(0, 0, cr, 0, TAU); ctx.fill();
+        // wide halo
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt); ctx.scale(1, SQ);
+        const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, gR * 1.3);
+        halo.addColorStop(0, 'rgba(255,225,190,.26)'); halo.addColorStop(.15, 'rgba(190,150,255,.14)');
+        halo.addColorStop(.5, 'rgba(90,110,230,.06)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(0, 0, gR * 1.3, 0, TAU); ctx.fill();
+        // the spiral itself
+        ctx.rotate(spin); ctx.globalAlpha = .96;
+        ctx.drawImage(tex, -gR * 1.25, -gR * 1.25, gR * 2.5, gR * 2.5);
         ctx.restore();
-        ctx.globalCompositeOperation = 'source-over';
+        // twinkling stars riding the arms (kept round by projecting manually)
+        const n = Math.round(live.length * qual);
+        for (let i = 0; i < n; i++) {
+          const s = live[i], tw = .55 + .45 * Math.sin(time * s.tw + s.ph), p = proj(s.x, s.y), sz = s.s * (.8 + .5 * tw) * 3.4;
+          ctx.globalAlpha = s.a * tw;
+          ctx.drawImage(glow(s.c[0], s.c[1], s.c[2]), p[0] - sz, p[1] - sz, sz * 2, sz * 2);
+          if (s.s > 2.7 && tw > .85) { ctx.globalAlpha = s.a * .4; ctx.drawImage(spike, p[0] - sz * 2.2, p[1] - sz * 2.2, sz * 4.4, sz * 4.4); }
+        }
+        // breathing core + faint diffraction cross
+        const pulse = 1 + Math.sin(time * 1.3) * .08, core = gR * .16 * pulse;
+        ctx.globalAlpha = .85; ctx.drawImage(glow(255, 235, 205), cx - core, cy - core * SQ * 1.4, core * 2, core * 2 * SQ * 1.4);
+        ctx.globalAlpha = .22 + .08 * Math.sin(time * .9);
+        ctx.drawImage(spike, cx - gR * .3, cy - gR * .3, gR * .6, gR * .6);
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      }
+
+      function drawStars(dt) {
+        const warp = Math.min(Math.abs(scrollVel) / 1400, 1), dir = scrollVel >= 0 ? 1 : -1;
+        ctx.globalCompositeOperation = 'lighter';
+        for (const s of stars) {
+          if (!reduced) { s.x += s.v * dt; s.y += s.v * .22 * dt; }
+          const x = (((s.x + mx * 28 * s.d) % (W + 8)) + (W + 8)) % (W + 8) - 4;
+          const y = (((s.y + my * 20 * s.d - sy * .22 * s.d) % (H + 8)) + (H + 8)) % (H + 8) - 4;
+          const tw = .62 + .38 * Math.sin(time * s.tw + s.ph), alpha = Math.min(1, s.a * tw * (1 + warp * .5));
+          const c = s.c;
+          if (warp > .04 && s.d > .3) {
+            const len = warp * 52 * s.d, g = ctx.createLinearGradient(x, y, x, y - dir * len);
+            g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${alpha.toFixed(3)})`); g.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
+            ctx.strokeStyle = g; ctx.lineWidth = s.r * 1.1; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - dir * len); ctx.stroke();
+          }
+          const sz = s.r * 2;
+          ctx.globalAlpha = alpha;
+          if (s.r < 1.2) { ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x - s.r * .7, y - s.r * .7, s.r * 1.4, s.r * 1.4); }
+          else {
+            ctx.drawImage(glow(c[0], c[1], c[2]), x - sz * 2.2, y - sz * 2.2, sz * 4.4, sz * 4.4);
+            if (s.r > 2.1 && tw > .8) { ctx.globalAlpha = alpha * .6; ctx.drawImage(spike, x - s.r * 7, y - s.r * 7, s.r * 14, s.r * 14); }
+          }
+        }
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
 
       function spawnComet() {
-        const fromLeft = Math.random() < .5, speed = rand(520, 860), ang = rand(.3, .7);
-        comets.push({
-          x: fromLeft ? rand(-40, W * .5) : rand(W * .5, W + 40), y: rand(-30, H * .5),
-          vx: (fromLeft ? 1 : -1) * Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
-          life: 0, max: rand(.9, 1.5), size: rand(1.4, 2.4)
-        });
+        const left = Math.random() < .5, sp = rand(620, 980), a = rand(.28, .66);
+        comets.push({ x: left ? rand(-40, W * .55) : rand(W * .45, W + 40), y: rand(-30, H * .45), vx: (left ? 1 : -1) * Math.cos(a) * sp, vy: Math.sin(a) * sp,
+          life: 0, max: rand(1, 1.7), size: rand(1.4, 2.6), tint: Math.random() < .3 ? [255, 215, 170] : [170, 205, 255] });
       }
       function drawComets(dt) {
+        ctx.globalCompositeOperation = 'lighter';
         for (let i = comets.length - 1; i >= 0; i--) {
-          const c = comets[i];
-          c.life += dt; c.x += c.vx * dt; c.y += c.vy * dt;
-          const k = 1 - c.life / c.max;
-          if (k <= 0) { comets.splice(i, 1); continue; }
-          const tx = c.x - c.vx * .13, ty = c.y - c.vy * .13;
-          const g = ctx.createLinearGradient(c.x, c.y, tx, ty);
-          g.addColorStop(0, 'rgba(255,255,255,' + (k).toFixed(3) + ')');
-          g.addColorStop(.35, 'rgba(170,205,255,' + (k * .5).toFixed(3) + ')');
-          g.addColorStop(1, 'rgba(120,170,255,0)');
+          const c = comets[i]; c.life += dt; c.x += c.vx * dt; c.y += c.vy * dt;
+          const k = 1 - c.life / c.max; if (k <= 0) { comets.splice(i, 1); continue; }
+          const tx = c.x - c.vx * .2, ty = c.y - c.vy * .2, g = ctx.createLinearGradient(c.x, c.y, tx, ty), t = c.tint;
+          g.addColorStop(0, `rgba(255,255,255,${k.toFixed(3)})`); g.addColorStop(.3, `rgba(${t[0]},${t[1]},${t[2]},${(k * .5).toFixed(3)})`); g.addColorStop(1, `rgba(${t[0]},${t[1]},${t[2]},0)`);
           ctx.strokeStyle = g; ctx.lineWidth = c.size; ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(tx, ty); ctx.stroke();
-          const hg = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, 9);   // glowing head
-          hg.addColorStop(0, 'rgba(255,255,255,' + (k * .9).toFixed(3) + ')');
-          hg.addColorStop(1, 'rgba(160,200,255,0)');
-          ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(c.x, c.y, 9, 0, TAU); ctx.fill();
+          ctx.globalAlpha = k; ctx.drawImage(glow(255, 255, 255), c.x - 11, c.y - 11, 22, 22);
         }
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
 
-      // click/tap makes a little burst of stardust
+      function drawNovas(dt) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = novas.length - 1; i >= 0; i--) {
+          const n = novas[i]; n.life += dt; const u = n.life / n.max;
+          if (u >= 1) { novas.splice(i, 1); continue; }
+          const e = u < .12 ? u / .12 : Math.pow(1 - (u - .12) / .88, 2), sz = (20 + 90 * Math.min(1, u * 3)) * n.k;
+          ctx.globalAlpha = e * .9; ctx.drawImage(glow(210, 225, 255), n.x - sz, n.y - sz, sz * 2, sz * 2);
+          ctx.globalAlpha = e; ctx.drawImage(spike, n.x - sz * 1.4, n.y - sz * 1.4, sz * 2.8, sz * 2.8);
+          const rr = u * 150 * n.k; ctx.globalAlpha = (1 - u) * .35; ctx.strokeStyle = 'rgb(170,200,255)'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.arc(n.x, n.y, rr, 0, TAU); ctx.stroke();
+        }
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      }
+
       function burst(x, y) {
-        for (let i = 0; i < 18; i++) {
-          const a = Math.random() * TAU, v = rand(30, 140);
-          bursts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: rand(.6, 1.2) });
+        rings.push({ x, y, life: 0, max: .9 });
+        for (let i = 0; i < 36; i++) {
+          const a = rand(0, TAU), v = rand(40, 200), c = STARCOL[(Math.random() * 5) | 0];
+          bursts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: rand(.7, 1.5), c, s: rand(3, 8) });
         }
       }
       function drawBursts(dt) {
-        for (let i = bursts.length - 1; i >= 0; i--) {
-          const b = bursts[i];
-          b.life += dt; b.x += b.vx * dt; b.y += b.vy * dt; b.vx *= .97; b.vy *= .97;
-          const k = 1 - b.life / b.max;
-          if (k <= 0) { bursts.splice(i, 1); continue; }
-          ctx.fillStyle = 'rgba(190,220,255,' + (k * .85).toFixed(3) + ')';
-          ctx.beginPath(); ctx.arc(b.x, b.y, 1.2 * k + .3, 0, TAU); ctx.fill();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = rings.length - 1; i >= 0; i--) {
+          const r = rings[i]; r.life += dt; const u = r.life / r.max; if (u >= 1) { rings.splice(i, 1); continue; }
+          ctx.globalAlpha = (1 - u) * .55; ctx.strokeStyle = 'rgb(170,205,255)'; ctx.lineWidth = 2 * (1 - u) + .5;
+          ctx.beginPath(); ctx.arc(r.x, r.y, u * 120, 0, TAU); ctx.stroke();
         }
+        for (let i = bursts.length - 1; i >= 0; i--) {
+          const b = bursts[i]; b.life += dt; b.x += b.vx * dt; b.y += b.vy * dt; b.vx *= .96; b.vy *= .96;
+          const k = 1 - b.life / b.max; if (k <= 0) { bursts.splice(i, 1); continue; }
+          ctx.globalAlpha = k * .9; const s = b.s * (.4 + k * .6);
+          ctx.drawImage(glow(b.c[0], b.c[1], b.c[2]), b.x - s, b.y - s, s * 2, s * 2);
+        }
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
 
       function render(dt) {
         ctx.clearRect(0, 0, W, H);
         drawNebula(); drawGalaxy(); drawStars(dt);
-        if (!reduced) { drawComets(dt); drawBursts(dt); }
+        if (!reduced) { drawNovas(dt); drawComets(dt); drawBursts(dt); }
       }
 
       function loop(now) {
         if (document.hidden) { frame = 0; return; }
-        const dt = Math.min((now - (last || now)) / 1000, .05);
+        const raw = (now - (last || now)) / 1000, dt = Math.min(raw, .05);
         last = now; time += dt;
-        // ease pointer + measure scroll speed
-        mx = lerp(mx, tmx, 1 - Math.pow(.001, dt)); my = lerp(my, tmy, 1 - Math.pow(.001, dt));
-        scrollY = scrollY0();
-        scrollVel = lerp(scrollVel, dt > 0 ? (scrollY - prevScroll) / dt : 0, .18);
-        prevScroll = scrollY;
-        nextComet -= dt;
-        if (nextComet <= 0) { spawnComet(); nextComet = rand(3, 7); }
+        const ease = 1 - Math.pow(.001, dt);
+        mx = lerp(mx, tmx, ease); my = lerp(my, tmy, ease);
+        sy = sy0(); scrollVel = lerp(scrollVel, dt > 0 ? (sy - prevSy) / dt : 0, .18); prevSy = sy;
+        spinBoost = lerp(spinBoost, Math.min(Math.abs(scrollVel) / 900, 1.6), .06);
+        spin += dt * (.03 + spinBoost * .22);                   // slow pattern rotation, speeds up while scrolling
+        nextComet -= dt; if (nextComet <= 0) { spawnComet(); if (Math.random() < .25) spawnComet(); nextComet = rand(2.5, 6); }
+        nextNova -= dt; if (nextNova <= 0) { novas.push({ x: rand(W * .08, W * .92), y: rand(H * .1, H * .8), life: 0, max: 3.4, k: rand(.7, 1.2) }); nextNova = rand(12, 24); }
         render(dt);
+        // adaptive quality: thin the live stars if the device struggles
+        if (raw > .034) { slow++; fast = 0; } else { fast++; slow = Math.max(0, slow - 1); }
+        if (slow > 40 && qual > .3) { qual -= .25; slow = 0; }
+        else if (fast > 600 && qual < 1) { qual = Math.min(1, qual + .25); fast = 0; }
         frame = requestAnimationFrame(loop);
       }
 
       build();
       let rt;
-      addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { build(); if (reduced) render(0); }, 150); }, { passive: true });
+      addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { build(); if (reduced) render(0); }, 180); }, { passive: true });
       if (reduced) { render(0); return; }
-
-      if (fine) addEventListener('pointermove', e => {
-        tmx = e.clientX / W * 2 - 1; tmy = e.clientY / H * 2 - 1;
-      }, { passive: true });
+      if (fine) addEventListener('pointermove', e => { tmx = e.clientX / W * 2 - 1; tmy = e.clientY / H * 2 - 1; }, { passive: true });
       addEventListener('pointerdown', e => burst(e.clientX, e.clientY), { passive: true });
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && !frame) { last = 0; frame = requestAnimationFrame(loop); }
-      });
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && !frame) { last = 0; frame = requestAnimationFrame(loop); } });
       frame = requestAnimationFrame(loop);
     })();
   </script>
