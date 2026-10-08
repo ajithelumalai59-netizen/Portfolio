@@ -3,7 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <title>Stylish Fresher Portfolio</title>
+  <script>
+    /* Smoothness: run element pointermove handlers at most once per frame (they all write CSS vars / transforms). */
+    (function(){
+      var orig = EventTarget.prototype.addEventListener;
+      EventTarget.prototype.addEventListener = function(type, fn, opts){
+        if (type === 'pointermove' && this instanceof Element && typeof fn === 'function') {
+          var ev, queued = false, self = this;
+          return orig.call(this, type, function(e){
+            ev = e; if (queued) return; queued = true;
+            requestAnimationFrame(function(){ queued = false; fn.call(self, ev); });
+          }, opts);
+        }
+        return orig.call(this, type, fn, opts);
+      };
+    })();
+  </script>
   <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQTKOlULyVfFdSr9lEnJeSas1IHt3xewzA9bZt_KOgAA&s" type="image/x-icon">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
@@ -1132,6 +1149,28 @@
       .nav-pill,.navbar::after,.navbar { transition:none!important; }
     }
   </style>
+  <style>
+    /* ===== Smoothness / performance overrides ===== */
+    .cursor-glow { mix-blend-mode:normal; }
+    .navbar { backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+    .navbar::before { animation-play-state:paused; }
+    .navbar:hover::before, .navbar:focus-within::before { animation-play-state:running; }
+    .contact-section { backdrop-filter:none; -webkit-backdrop-filter:none; background:rgba(17,24,37,.9); }
+    .ab-card { backdrop-filter:none; -webkit-backdrop-filter:none; background:linear-gradient(145deg,rgba(33,46,68,.92),rgba(18,27,42,.9)); }
+    .ct-badge { backdrop-filter:none; -webkit-backdrop-filter:none; }
+    .ab-blob { mix-blend-mode:normal; }
+    .ab-grid, .ct-grid { animation:none; }
+    .ab-avatar::before { border-radius:50%; animation:abSpin 9s linear infinite; will-change:transform; }
+    #about h1 { filter:none; }
+    .ab-beam { left:0; transform:translateX(-133%) skewX(-18deg); animation:abBeamT 9s ease-in-out infinite; }
+    @keyframes abBeamT { 0% { transform:translateX(-133%) skewX(-18deg); } 60%,100% { transform:translateX(433%) skewX(-18deg); } }
+    .pc-lane { container-type:inline-size; }
+    .pc-car { left:0; animation-name:pcDriveT; will-change:transform; }
+    @keyframes pcDriveT { from { transform:translateX(-160px); } to { transform:translateX(100cqw); } }
+    /* Sections that are off screen stop animating entirely (set by script at the end of the page) */
+    .is-offscreen, .is-offscreen *, .is-offscreen *::before, .is-offscreen *::after { animation-play-state:paused !important; }
+    @media(prefers-reduced-motion:reduce) { .pc-car { left:60%; } .ab-beam { animation:none; } }
+  </style>
 </head>
 <body>
   <canvas class="galaxy-canvas" aria-hidden="true"></canvas>
@@ -1215,7 +1254,7 @@
         <span class="ab-badge" style="--a:180deg;--c:#f5d35c"><i class="bi bi-filetype-js"></i></span>
         <span class="ab-badge" style="--a:270deg;--c:#37e0c2"><i class="bi bi-code-slash"></i></span>
       </div>
-      <img src="Ajith.jpeg" alt="Profile" class="profile-img">
+      <img src="Ajith.jpeg" alt="Profile" class="profile-img" decoding="async" fetchpriority="high">
     </div>
 
     <p class="ab-hello"><span class="ab-wave">👋</span> Hello, I'm</p>
@@ -1229,6 +1268,7 @@
     </p>
     <div class="ab-cta">
       <a class="ab-btn primary" href="#projects"><i class="bi bi-rocket-takeoff"></i> View Projects</a>
+      <a class="ab-btn ghost" href="file:///C:/Users/acer/Downloads/Projects/My%20Portfolio/Ajith%20M%20Resume.html" target="_blank" rel="noopener"><i class="bi bi-file-earmark-person"></i> View Resume</a>
       <a class="ab-btn ghost" href="#contact"><i class="bi bi-chat-dots"></i> Contact Me</a>
     </div>
     <div class="contact-info mb-2">
@@ -1275,7 +1315,9 @@
   st.forEach(function(o){o.n.addEventListener('animationend',function(e){if(e.animationName==='skLaunch'){o.live=true;o.n.style.animation='none';o.n.style.opacity='1';}});});
   var paused=false,last=0;
   nodes.forEach(function(n){n.addEventListener('pointerenter',function(){paused=true;});n.addEventListener('pointerleave',function(){paused=false;});});
+  var skVisible=true,running=false;
   function tick(t){
+    if(!skVisible){running=false;last=0;return;}
     var dt=last?Math.min((t-last)/1000,.1):0;last=t;
     st.forEach(function(o){
       if(!o.live)return;
@@ -1285,7 +1327,9 @@
     });
     requestAnimationFrame(tick);
   }
-  requestAnimationFrame(tick);
+  function kick(){if(!running&&skVisible){running=true;last=0;requestAnimationFrame(tick);}}
+  if('IntersectionObserver' in window)new IntersectionObserver(function(es){skVisible=es[0].isIntersecting;kick();},{rootMargin:'150px'}).observe(document.getElementById('skills'));
+  kick();
 })();
 </script>
   </section>
@@ -1484,19 +1528,17 @@
     });
   </script>
   <!-- Bootstrap JS Bundle -->
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Animation on scroll -->
   <script>
-    function revealSections() {
-      document.querySelectorAll('.animated-section').forEach(section => {
-        const rect = section.getBoundingClientRect();
-        if (rect.top < window.innerHeight - 80) {
-          section.classList.add('visible');
-        }
-      });
-    }
-    window.addEventListener('scroll', revealSections);
-    window.addEventListener('load', revealSections);
+    (function () {
+      var secs = [].slice.call(document.querySelectorAll('.animated-section'));
+      if (!('IntersectionObserver' in window)) { secs.forEach(function (x) { x.classList.add('visible'); }); return; }
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+      }, { rootMargin: '0px 0px -80px 0px', threshold: 0 });
+      secs.forEach(function (x) { io.observe(x); });
+    })();
 
     const contactForm = document.getElementById('contact-form');
     const formStatus = document.getElementById('form-status');
@@ -1638,7 +1680,7 @@
       let W = 0, H = 0, ratio = 1, frame = 0, last = 0, time = 0;
       let gx = 0, gy = 0, gR = 0, tex = null, live = [], stars = [], clouds = [], far = [];
       let comets = [], novas = [], bursts = [], rings = [];
-      let nextComet = 2, nextNova = 9, qual = 1, slow = 0, fast = 0;
+      let nextComet = 2, nextNova = 9, qual = 1, slow = 0, fast = 0, half = false, skipTick = false;
       let mx = 0, my = 0, tmx = 0, tmy = 0, spin = 0, spinBoost = 0;
       const sy0 = () => window.pageYOffset || 0;
       let sy = sy0(), prevSy = sy, scrollVel = 0;
@@ -1767,7 +1809,7 @@
       }
 
       function build() {
-        ratio = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+        ratio = Math.min(devicePixelRatio || 1, 1.5); W = innerWidth; H = innerHeight;
         canvas.width = Math.round(W * ratio); canvas.height = Math.round(H * ratio);
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         const area = Math.min(1, (W * H) / (1400 * 850)), mobile = W < 700;
@@ -1923,6 +1965,7 @@
 
       function loop(now) {
         if (document.hidden) { frame = 0; return; }
+        if (half && (skipTick = !skipTick)) { frame = requestAnimationFrame(loop); return; }
         const raw = (now - (last || now)) / 1000, dt = Math.min(raw, .05);
         last = now; time += dt;
         const ease = 1 - Math.pow(.001, dt);
@@ -1934,8 +1977,9 @@
         nextNova -= dt; if (nextNova <= 0) { novas.push({ x: rand(W * .08, W * .92), y: rand(H * .1, H * .8), life: 0, max: 3.4, k: rand(.7, 1.2) }); nextNova = rand(12, 24); }
         render(dt);
         // adaptive quality: thin the live stars if the device struggles
-        if (raw > .034) { slow++; fast = 0; } else { fast++; slow = Math.max(0, slow - 1); }
+        if (raw > (half ? .06 : .034)) { slow++; fast = 0; } else { fast++; slow = Math.max(0, slow - 1); }
         if (slow > 40 && qual > .3) { qual -= .25; slow = 0; }
+        else if (slow > 40 && !half) { half = true; slow = 0; }
         else if (fast > 600 && qual < 1) { qual = Math.min(1, qual + .25); fast = 0; }
         frame = requestAnimationFrame(loop);
       }
@@ -2311,12 +2355,12 @@
   var lastY = window.scrollY, ticking = false, lockUntil = 0;
   function onScroll(){
     var y = window.scrollY, h = document.documentElement.scrollHeight - window.innerHeight;
-    nav.style.setProperty('--sp', h > 0 ? Math.min(y/h,1).toFixed(4) : 0);
-    nav.classList.toggle('nav-scrolled', y > 30);
     // active section
     var idx = 0, probe = 160;
     secs.forEach(function(sec,i){ if(sec && sec.getBoundingClientRect().top <= probe) idx = i; });
     if(h > 0 && y >= h - 4) idx = secs.length - 1;
+    nav.style.setProperty('--sp', h > 0 ? Math.min(y/h,1).toFixed(4) : 0);
+    nav.classList.toggle('nav-scrolled', y > 30);
     setActive(links[idx]);
     // hide on scroll down, show on scroll up
     var menuOpen = ul.parentNode.classList.contains('show');
@@ -2336,6 +2380,19 @@
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(init);
   window.addEventListener('load', init);
   init();
+})();
+</script>
+<script>
+(function(){
+  if(!('IntersectionObserver' in window)) return;
+  var secs=['about','skills','projects','education','contact'].map(function(i){return document.getElementById(i);}).filter(Boolean);
+  function setState(sec,on){
+    sec.classList.toggle('is-offscreen',!on);
+    var svgs=sec.querySelectorAll('svg');
+    for(var i=0;i<svgs.length;i++){try{on?svgs[i].unpauseAnimations():svgs[i].pauseAnimations();}catch(e){}}
+  }
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){setState(e.target,e.isIntersecting);});},{rootMargin:'200px 0px 200px 0px'});
+  secs.forEach(function(sec){ if(sec.id!=='about') sec.classList.add('is-offscreen'); io.observe(sec); });
 })();
 </script>
 </body>
